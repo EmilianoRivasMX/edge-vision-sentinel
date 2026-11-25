@@ -1,0 +1,47 @@
+steps:
+  # 1. Build Docker image with Google Artifact Registry tag
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/edge-vision-sentinel:$COMMIT_SHA'
+      - '-t'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/edge-vision-sentinel:latest'
+      - '-f'
+      - 'deployment/Dockerfile'
+      - '.'
+
+  # 2. Push image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/edge-vision-sentinel:$COMMIT_SHA'
+
+  # 3. Deploy to Cloud Run (Edge Telemetry Gateway)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'edge-vision-sentinel'
+      - '--image'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/edge-vision-sentinel:$COMMIT_SHA'
+      - '--region'
+      - '$_REGION'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8000'
+      - '--memory'
+      - '2Gi'
+      - '--cpu'
+      - '2'
+
+substitutions:
+  _REGION: 'us-central1'
+  _REPO_NAME: 'edge-mlops'
+
+images:
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/edge-vision-sentinel:$COMMIT_SHA'
+  - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_REPO_NAME/edge-vision-sentinel:latest'

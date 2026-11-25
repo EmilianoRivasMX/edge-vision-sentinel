@@ -1,0 +1,24 @@
+version: "3.8"
+
+services:
+  edge-vision-sentinel:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    container_name: edge-vision-sentinel
+    ports:
+      - "8000:8000"
+    environment:
+      - SENTINEL_NODE_ID=edge-node-line-01
+      - SENTINEL_ENVIRONMENT=production
+      - SENTINEL_TARGET_FPS=30.0
+      - SENTINEL_SHARPNESS_BLUR_THRESHOLD=45.0
+      - SENTINEL_KS_DRIFT_ALPHA=0.05
+    volumes:
+      - ../assets:/app/assets:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
